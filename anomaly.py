@@ -17,6 +17,8 @@ def doc2L(doc):
     Initially, a document d is transformed to a set of weighted features L = {(ti, wi)} where feature ti
     is a token of d and wi is its frequency in d. Tokens are also obtained as in shingling and appear only 
     once in set L. This weighted set can be viewed as a multidimensional vector. 
+    
+    Output: list of tuples (ti, wi) for each i.
     """
     # FILL IN CODE HERE
         
