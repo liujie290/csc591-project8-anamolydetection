@@ -39,7 +39,28 @@ def doc2L(doc):
     Output: list of tuples (ti, wi) for each i.
     """
     # FILL IN CODE HERE
-        
+
+def hamming(str1, str2):
+    """Performs the hamming distance on two equal length strings
+    Following examples are for doctest:
+    >>> hamming("hello", "world")
+    4
+
+    >>> hamming("karolin", "kathrin")
+    3
+
+    >>> hamming("karolin", "kerstin")
+    3
+    """
+    if len(str1) != len(str2):
+        raise Exception("strings aren't same length")
+
+    return reduce(lambda x,y: x + y,
+                  map(lambda (x,y): 0 if x==y else 1,
+                      zip(str1, str2)), 0)
+
+
+
 def simhash(L1, L2):
     """
     simhash from equation (6): simhash(L1,L2) = 1 - hamming(h,h')/b
@@ -70,4 +91,7 @@ def main():
     #doc2L(testdoc)
 
 if __name__ == "__main__":
+    import doctest
+    hamming("hello", "world")
+    doctest.testmod()
     main()
