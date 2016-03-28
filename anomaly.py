@@ -3,6 +3,7 @@
 import os
 import sys
 import re
+import random
 
 if len(sys.argv) != 2:
     print "missing input var, correct usage:"
@@ -67,7 +68,6 @@ def hamming(vec1, vec2):
                   map(lambda (x,y): 0 if x==y else 1,
                       zip(vec1, vec2)), 0)
 
-
 def simhash(L1, L2):
     """Performs the simhash function on two tuples defined as (ti, wi)
     where ti is a token of document d and wi is its frequency in d.
@@ -79,12 +79,15 @@ def simhash(L1, L2):
     >>> simhash(("token", 20), ("token2", 30))
     """
     (t1, w1) = L1
-    (t2, w2) = L@
-    result = 1 - hamming(h1, hprime)/b_num
+    (t2, w2) = L2
+    doc1 = lookup(t1)
+    doc2 = lookup(t2)
+
+    for i in range(0, b_numl):
+        h1 = doc1[random.randrange(-w1, w1, 1)]
+        h2 = doc2[random.randrange(-w2, w2, 1)]
+        result += 1 - hamming(h1, h2)/b_num
     return result
-
-    
-
 
 
 def main():
@@ -108,6 +111,5 @@ def main():
 
 if __name__ == "__main__":
     import doctest
-    hamming("hello", "world")
-    doctest.testmod()
+    #doctest.testmod()
     main()
