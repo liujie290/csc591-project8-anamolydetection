@@ -3,6 +3,7 @@
 import os
 import sys
 import re
+import igraph
 import random
 
 if len(sys.argv) != 2:
@@ -31,16 +32,69 @@ def getdoc(number, filemapping):
     edgelist = [re.findall(r'[0-9]+', line) for line in edgelist]
     edgelist = [(int(vertex1),int(vertex2)) for (vertex1, vertex2) in edgelist]
     return edgelist
-        
-def doc2L(doc):
+
+def shingling(graph):
     """
-    Initially, a document d is transformed to a set of weighted features L = {(ti, wi)} where feature ti
-    is a token of d and wi is its frequency in d. Tokens are also obtained as in shingling and appear only 
-    once in set L. This weighted set can be viewed as a multidimensional vector. 
+    Take in a graph and produce a list of tuples using the walk algorithm.
+    The first element of the tuple is the token (vertex ID) and the second
+    element is the number of neighbors the vertex ID has, which in an 
+    undirected graph, is the number of edges the vertex has. 
+    """
+    # We make a list of tuples (vertex ID, quality score, whether the vertex
+    # has been visited) in decreasing order of quality.
+    vertexQuality = [(vertexId, quality) for vertexId,quality in enumerate(graph.pagerank())]
+    vertexQuality.sort(key=lambda(pair): (pair[1], random.random()) \
+                        ,reverse=True)
+    verticesSorted = [vertexId for (vertexId,quality) in vertexQuality]
+    vertexQuality = dict(vertexQuality)
+    vertexVisited = dict([(vertexId,False) for vertexId in verticesSorted])
+    #print verticesSorted
+    adjlist = graph.get_adjlist()
+    #print adjlist
+    output = []
+    for vertex in verticesSorted:
+        active = vertex
+        takingWalk = True
+        while takingWalk and not vertexVisited[active]:
+            # Add vertex to list.
+            neighbors = adjlist[active]
+            output.append((active, len(neighbors)))
+            vertexVisited[active] = True
+            # Get unvisted neighbor of highest quality
+            unvisitedNeighbors = [(node, vertexQuality[node])
+                                  for node in neighbors
+                                  if not vertexVisited[node]]
+            if len(unvisitedNeighbors) > 0:
+                unvisitedNeighbors.sort(key=lambda(pair): \
+                                        (pair[1],random.random()) \
+                                        ,reverse=True)
+                active = unvisitedNeighbors[0][0]
+            else: 
+                takingWalk = False
+    return output                
+        
+def doc2L(edgelist):
+    """
+    Initially, a document d is transformed to a set of weighted features 
+    L = {(ti, wi)} where feature ti is a token of d and wi is its frequency in 
+    d. Tokens are also obtained as in shingling and appear only once in set L. 
+    This weighted set can be viewed as a multidimensional vector. 
     
     Output: list of tuples (ti, wi) for each i.
     """
-    # FILL IN CODE HERE
+    # Build up the graph from the edgelist.
+    maxVertex = max([max(ofpair) for ofpair in edgelist])
+    graph = igraph.Graph()
+    graph.add_vertices(maxVertex+1)
+    graph.add_edges(edgelist)
+    # The edgelist uses vertex IDs and may not represent each vertex.
+    # We therefore clean up the graph.
+    emptyVertices = [vertexId   for (vertexId, adjacents)
+                                in enumerate(graph.get_adjlist())
+                                if 0 == len(adjacents)]
+    graph.delete_vertices(emptyVertices)
+    tokenWithWeights = shingling(graph)
+    return tokenWithWeights
 
 def hamming(vec1, vec2):
     """Performs the hamming distance on two equal length enumerable types.
@@ -91,8 +145,9 @@ def simhash(L1, L2):
 
 
 def main():
-    print "Data directory is set to", dataset_dir
-    
+    #print "Data directory is set to", dataset_dir
+    random.seed(591)
+
     # Read all the files.
     absdir = os.path.abspath(dataset_dir)
     files = os.listdir(absdir)
@@ -107,7 +162,7 @@ def main():
     # Test doc2L
     testdoc = getdoc(0, filemapping)
     #print testdoc
-    #doc2L(testdoc)
+    print doc2L(testdoc)
 
 if __name__ == "__main__":
     import doctest
