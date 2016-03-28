@@ -9,6 +9,7 @@ if len(sys.argv) != 2:
     print "python anomaly.py <dataset directory>"
     exit(1)
 dataset_dir = sys.argv[1]
+b_num = 512
 
 
 def read_file(filename) :
@@ -40,33 +41,48 @@ def doc2L(doc):
     """
     # FILL IN CODE HERE
 
-def hamming(str1, str2):
-    """Performs the hamming distance on two equal length strings
+def hamming(vec1, vec2):
+    """Performs the hamming distance on two equal length enumerable types.
+    Input: any two enumerable objects (list, string, etc.)
+    Output: hamming distance as an integer
+    
     Following examples are for doctest:
     >>> hamming("hello", "world")
     4
-
     >>> hamming("karolin", "kathrin")
     3
-
     >>> hamming("karolin", "kerstin")
     3
+    >>> hamming([0, 1, 1, 3, 4], [0, 1, 2, 3, 4])
+    1
+    >>> hamming([0, 1, 1, 3, 4], [0, 1, 2, 3])
+    Traceback (most recent call last):
+        ...
+    Exception: vectors are not the same length
     """
-    if len(str1) != len(str2):
-        raise Exception("strings aren't same length")
+    if len(vec1) != len(vec2):
+        raise Exception("vectors are not the same length")
 
     return reduce(lambda x,y: x + y,
                   map(lambda (x,y): 0 if x==y else 1,
-                      zip(str1, str2)), 0)
-
+                      zip(vec1, vec2)), 0)
 
 
 def simhash(L1, L2):
-    """
+    """Performs the simhash function on two tuples defined as (ti, wi)
+    where ti is a token of document d and wi is its frequency in d.
     simhash from equation (6): simhash(L1,L2) = 1 - hamming(h,h')/b
+
+    Input: Two tuples (ti, wi)
+    Output: simhash result
+
+    >>> simhash(("token", 20), ("token2", 30))
     """
-    # FILL IN CODE HERE
-    
+    (t1, w1) = L1
+    (t2, w2) = L@
+    result = 1 - hamming(h1, hprime)/b_num
+    return result
+
     
 
 
