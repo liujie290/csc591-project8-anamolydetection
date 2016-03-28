@@ -144,6 +144,13 @@ def simhash(L1, L2):
     return result
 
 
+# takes a list of similarities between consecutive
+# graphs and returns the outliers
+def find_outliers(similarities):
+#stub for now
+    output=[]
+    return output
+
 def main():
     #print "Data directory is set to", dataset_dir
     random.seed(591)
