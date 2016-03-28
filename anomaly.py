@@ -1,4 +1,8 @@
+#!/usr/bin/python 
+
+import os
 import sys
+import re
 
 if len(sys.argv) != 2:
     print "missing input var, correct usage:"
@@ -11,6 +15,20 @@ def read_file(filename) :
     f = open(filename, "r")
     for line in f:
         yield line
+        
+def getdoc(number, filemapping):
+    """
+    Take a filemapping and a filenumber and output the edgelist.
+    The filemapping is a dictionary that lets us grab the files in order.
+
+    Example Input: getdoc(0, filemapping)
+    Example Output: [(107, 13), (22, 3), (103, 3), ...]
+    """
+    filename = filemapping[number]
+    edgelist = read_file(filename)
+    edgelist = [re.findall(r'[0-9]+', line) for line in edgelist]
+    edgelist = [(int(vertex1),int(vertex2)) for (vertex1, vertex2) in edgelist]
+    return edgelist
         
 def doc2L(doc):
     """
@@ -34,6 +52,22 @@ def simhash(L1, L2):
 
 def main():
     print "Data directory is set to", dataset_dir
+    
+    # Read all the files.
+    absdir = os.path.abspath(dataset_dir)
+    files = os.listdir(absdir)
+    files = [os.path.join(absdir, filename) for filename in files]
+    #print files
+
+    # Create a dictionary that will map from file number to file.
+    filenumbers = [int(re.findall(r'[0-9]+', rec)[0]) for rec in files]
+    #print filenumbers
+    filemapping = dict(zip(filenumbers, files))
+
+    # Test doc2L
+    testdoc = getdoc(0, filemapping)
+    #print testdoc
+    #doc2L(testdoc)
 
 if __name__ == "__main__":
     main()
