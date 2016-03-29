@@ -169,12 +169,12 @@ def create_h(doc_tuples, b_num):
     return map(lambda x: 1 if x >= 0 else 0, bitarray)
 
 def simhash(L1, L2, b_num):
-    """Performs the simhash function on two tuples defined as (ti, wi)
+    """Performs the simhash function on two sets (L1, L2) of tuples defined as [(ti, wi), ...]
     where ti is a token of document d and wi is its frequency in d.
     simhash from equation (6): simhash(L1,L2) = 1 - hamming(h,h')/b
 
-    Input: Two tuples (ti, wi)
-    Output: simhash result
+    Input: Two sets of weighted tuples
+    Output: simhash result betw 0 and 1
 
     >>> filemapping = get_filemapping('./datasets/autonomous')
     >>> doc1 = doc2L(getdoc(0, filemapping))
