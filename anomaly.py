@@ -5,20 +5,31 @@ import sys
 import re
 import igraph
 import random
+import hashlib
+import bitarray
+import numpy
 
 if len(sys.argv) != 2:
     print "missing input var, correct usage:"
     print "python anomaly.py <dataset directory>"
     exit(1)
 dataset_dir = sys.argv[1]
-b_num = 512
-
 
 def read_file(filename) :
     f = open(filename, "r")
     for line in f:
         yield line
-        
+
+def get_filemapping(directory):
+    # Read all the files.
+    absdir = os.path.abspath(directory)
+    files = os.listdir(absdir)
+    files = [os.path.join(absdir, filename) for filename in files]
+
+    # Create a dictionary that will map from file number to file.
+    filenumbers = [int(re.findall(r'' + directory + '/([0-9]+)', rec)[0]) for rec in files]
+    return dict(zip(filenumbers, files))
+
 def getdoc(number, filemapping):
     """
     Take a filemapping and a filenumber and output the edgelist.
@@ -122,7 +133,42 @@ def hamming(vec1, vec2):
                   map(lambda (x,y): 0 if x==y else 1,
                       zip(vec1, vec2)), 0)
 
-def simhash(L1, L2):
+def hash_projection(wi, b_num):
+    """Creates a hash projection using the wi and the b value. Returning
+    array should be the same length as inputed n. Due to hashing issues
+    this is hard coded at 512 right now and should be set as a constant.
+
+    >>> hash = hash_projection(150, 512)
+    >>> len(hash)
+    512
+    """
+    hash = None
+    m = hashlib.new('sha512')
+
+    for i in range(0, b_num):
+        m.update(bytes(random.randrange(-wi, wi, 1)))
+
+    bits = bitarray.bitarray()
+    bits.frombytes(bytes(m.digest()))
+
+    gen_hash = map(lambda x: wi if x else -wi, bits)
+    return gen_hash
+
+def create_h(doc_tuples, b_num):
+    """Create the L value by taking all tuples from a doc and
+    projecting them into b bits using a hashing function. The generated
+    arrays are then summed.
+    >>> filemapping = get_filemapping('./datasets/autonomous')
+    >>> testdoc = getdoc(0, filemapping)
+    >>> testdoc_2L = doc2L(testdoc)
+    >>> L = create_h( testdoc_2L, 512)
+    >>> len(L)
+    512
+    """
+    bitarray = numpy.sum([hash_projection(wi, b_num) for (ti, wi) in doc_tuples], axis=0)
+    return map(lambda x: 1 if x >= 0 else 0, bitarray)
+
+def simhash(L1, L2, b_num):
     """Performs the simhash function on two tuples defined as (ti, wi)
     where ti is a token of document d and wi is its frequency in d.
     simhash from equation (6): simhash(L1,L2) = 1 - hamming(h,h')/b
@@ -130,19 +176,17 @@ def simhash(L1, L2):
     Input: Two tuples (ti, wi)
     Output: simhash result
 
-    >>> simhash(("token", 20), ("token2", 30))
+    >>> filemapping = get_filemapping('./datasets/autonomous')
+    >>> doc1 = doc2L(getdoc(0, filemapping))
+    >>> doc2 = doc2L(getdoc(1, filemapping))
+    >>> hash = simhash(doc1, doc2, 512)
+    >>> hash >= 0 and hash <= 1
+    True
     """
-    (t1, w1) = L1
-    (t2, w2) = L2
-    doc1 = lookup(t1)
-    doc2 = lookup(t2)
-
-    for i in range(0, b_numl):
-        h1 = doc1[random.randrange(-w1, w1, 1)]
-        h2 = doc2[random.randrange(-w2, w2, 1)]
-        result += 1 - hamming(h1, h2)/b_num
-    return result
-
+    h1 = create_h(L1, b_num)
+    h2 = create_h(L2, b_num)
+        
+    return 1 - hamming(h1, h2)/b_num
 
 # takes a list of similarities between consecutive
 # graphs and returns the outliers
@@ -155,23 +199,13 @@ def main():
     #print "Data directory is set to", dataset_dir
     random.seed(591)
 
-    # Read all the files.
-    absdir = os.path.abspath(dataset_dir)
-    files = os.listdir(absdir)
-    files = [os.path.join(absdir, filename) for filename in files]
-    #print files
-
-    # Create a dictionary that will map from file number to file.
-    filenumbers = [int(re.findall(r'[0-9]+', rec)[0]) for rec in files]
-    #print filenumbers
-    filemapping = dict(zip(filenumbers, files))
-
+    filemapping = get_filemapping(dataset_dir)
     # Test doc2L
     testdoc = getdoc(0, filemapping)
     #print testdoc
-    print doc2L(testdoc)
+    #print doc2L(testdoc)
 
 if __name__ == "__main__":
     import doctest
-    #doctest.testmod()
+    doctest.testmod()
     main()
