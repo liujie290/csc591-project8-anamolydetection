@@ -188,7 +188,23 @@ def simhash(L1, L2, b_num):
 
     result = 1.0 - hamming(h1, h2)/float(b_num)
         
-    return result 
+    return result
+
+def compute_similarities(graphs, b_num):
+    similarity_list = []
+    n = len(graphs)
+    for i in range(n-1):
+        L1 = doc2L(getdoc(i, graphs))
+        L2 = doc2L(getdoc(i+1, graphs))
+        sim = simhash(L1, L2, b_num)
+        similarity_list.append(sim);
+    return similarity_list
+
+def write_file(filename, similarities):
+    f = open(filename, "w+")
+    for sim in similarities:
+        f.write(str(sim) + "\n")
+    f.close()    
 
 # takes a list of similarities between consecutive
 # graphs and returns the outliers
@@ -206,6 +222,11 @@ def main():
     testdoc = getdoc(0, filemapping)
     #print testdoc
     #print doc2L(testdoc)
+    
+    similarities = compute_similarities(filemapping, 512)
+    #print similarities
+   
+    write_file("time_series.txt", similarities)
 
 if __name__ == "__main__":
     import doctest
