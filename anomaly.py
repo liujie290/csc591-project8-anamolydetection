@@ -185,8 +185,10 @@ def simhash(L1, L2, b_num):
     """
     h1 = create_h(L1, b_num)
     h2 = create_h(L2, b_num)
+
+    result = 1.0 - hamming(h1, h2)/float(b_num)
         
-    return 1 - hamming(h1, h2)/b_num
+    return result 
 
 # takes a list of similarities between consecutive
 # graphs and returns the outliers
