@@ -15,6 +15,11 @@ if len(sys.argv) != 2:
     exit(1)
 dataset_dir = sys.argv[1]
 
+# ensure data directory exists
+if(os.path.isdir(dataset_dir) == False):
+    print "Data directory does not exist!"
+    exit(1)
+
 def read_file(filename) :
     f = open(filename, "r")
     for line in f:
@@ -225,8 +230,11 @@ def main():
     
     similarities = compute_similarities(filemapping, 512)
     #print similarities
+
+    # prefix file with dataset name
+    filename = os.path.basename(os.path.normpath(dataset_dir)) + "_time_series.txt"
    
-    write_file("time_series.txt", similarities)
+    write_file(filename, similarities)
 
 if __name__ == "__main__":
     import doctest
