@@ -8,6 +8,7 @@ import random
 import hashlib
 import bitarray
 import numpy
+from itertools import tee,izip
 
 if len(sys.argv) != 2:
     print "missing input var, correct usage:"
@@ -141,14 +142,14 @@ def hamming(vec1, vec2):
 def hash_projection(wi, b_num):
     """Creates a hash projection using the wi and the b value. Returning
     array should be the same length as inputed n. Due to hashing issues
-    this is hard coded at 512 right now and should be set as a constant.
+    this is hard coded at 64 right now and should be set as a constant.
 
-    >>> hash = hash_projection(150, 512)
+    >>> hash = hash_projection(150, 64)
     >>> len(hash)
-    512
+    64
     """
     hash = None
-    m = hashlib.new('sha512')
+    m = hashlib.new('sha1')
 
     for i in range(0, b_num):
         m.update(bytes(random.randrange(-wi, wi, 1)))
@@ -157,7 +158,7 @@ def hash_projection(wi, b_num):
     bits.frombytes(bytes(m.digest()))
 
     gen_hash = map(lambda x: wi if x else -wi, bits)
-    return gen_hash
+    return gen_hash[:b_num]
 
 def create_h(doc_tuples, b_num):
     """Create the L value by taking all tuples from a doc and
@@ -166,14 +167,25 @@ def create_h(doc_tuples, b_num):
     >>> filemapping = get_filemapping('./datasets/autonomous')
     >>> testdoc = getdoc(0, filemapping)
     >>> testdoc_2L = doc2L(testdoc)
-    >>> L = create_h( testdoc_2L, 512)
+    >>> L = create_h( testdoc_2L, 64)
     >>> len(L)
-    512
+    64
     """
     bitarray = numpy.sum([hash_projection(wi, b_num) for (ti, wi) in doc_tuples], axis=0)
     return map(lambda x: 1 if x >= 0 else 0, bitarray)
 
-def simhash(L1, L2, b_num):
+simhash_cache = {}
+
+def create_h_cache(doc, b_num):
+    (id, tuples) = doc
+    if id in simhash_cache:
+        return simhash_cache[id]
+    else :
+        h = create_h(tuples, b_num)
+        simhash_cache[id] = h
+        return h
+
+def simhash(doc1, doc2, b_num):
     """Performs the simhash function on two sets (L1, L2) of tuples defined as [(ti, wi), ...]
     where ti is a token of document d and wi is its frequency in d.
     simhash from equation (6): simhash(L1,L2) = 1 - hamming(h,h')/b
@@ -184,32 +196,51 @@ def simhash(L1, L2, b_num):
     >>> filemapping = get_filemapping('./datasets/autonomous')
     >>> doc1 = doc2L(getdoc(0, filemapping))
     >>> doc2 = doc2L(getdoc(1, filemapping))
-    >>> hash = simhash(doc1, doc2, 512)
+    >>> hash = simhash((0,doc1), (1,doc2), 64)
     >>> hash >= 0 and hash <= 1
     True
     """
-    h1 = create_h(L1, b_num)
-    h2 = create_h(L2, b_num)
+    h1 = create_h_cache(doc1, b_num)
+    h2 = create_h_cache(doc2, b_num)
 
     result = 1.0 - hamming(h1, h2)/float(b_num)
         
     return result
 
+def simhash_lookup(a, b, docs, b_num) :
+    doc1 = (a, docs[a])
+    doc2 = (b, docs[b])
+    print "on doc", a, "and", b, "of", len(docs)
+    return simhash(doc1, doc2, b_num)
+
+def pairwise(iterable):
+    "s -> (s0,s1), (s1,s2), (s2, s3), ..."
+    a, b = tee(iterable)
+    next(b, None)
+    return izip(a, b)
+
 def compute_similarities(graphs, b_num):
+    create_h_cache = {} #reset just in case
     similarity_list = []
     n = len(graphs)
-    for i in range(n-1):
-        L1 = doc2L(getdoc(i, graphs))
-        L2 = doc2L(getdoc(i+1, graphs))
-        sim = simhash(L1, L2, b_num)
+    docs = {}
+    id_pairs = pairwise(range(n))
+
+    for id in range(n):
+        docs[id] = doc2L(getdoc(id, graphs))
+    
+    for (i,j) in id_pairs:
+        sim = simhash_lookup(i, j, docs, b_num)
         similarity_list.append(sim);
+
     return similarity_list
+
 
 def write_file(filename, similarities):
     f = open(filename, "w+")
     for sim in similarities:
         f.write(str(sim) + "\n")
-    f.close()    
+    f.close()
 
 # takes a list of similarities between consecutive
 # graphs and returns the outliers
@@ -228,7 +259,7 @@ def main():
     #print testdoc
     #print doc2L(testdoc)
     
-    similarities = compute_similarities(filemapping, 512)
+    similarities = compute_similarities(filemapping, 64)
     #print similarities
 
     # prefix file with dataset name
