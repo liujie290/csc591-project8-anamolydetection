@@ -235,6 +235,27 @@ def compute_similarities(graphs, b_num):
 
     return similarity_list
 
+def moving_average(list):
+    sum = 0
+
+    for i in range(1,len(list)):
+        xi = list[i]
+        xin = list[i-1]
+        sum += abs(xi-xin)
+
+    return sum/(len(list)-1)
+
+
+def calculate_threshold(similarity_list):
+    """Calculate the threshold based on the similarities
+
+    >>> calculate_threshold([2,3,4,5,6,7,5,4,3,2,1])
+    (1.0, 7.0)
+    """
+    m = moving_average(similarity_list) 
+    med = numpy.median(similarity_list)
+    return (med-3*m, med+3*m)
+
 
 def write_file(filename, similarities):
     f = open(filename, "w+")
@@ -260,7 +281,8 @@ def main():
     #print doc2L(testdoc)
     
     similarities = compute_similarities(filemapping, 64)
-    #print similarities
+    threshold = calculate_threshold(similarities)
+    print threshold
 
     # prefix file with dataset name
     filename = os.path.basename(os.path.normpath(dataset_dir)) + "_time_series.txt"
